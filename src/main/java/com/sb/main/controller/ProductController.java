@@ -1,11 +1,11 @@
 package com.sb.main.controller;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
 import com.sb.main.Entity.Product;
+import com.sb.main.ResponseAudit.AuditLogResponseDTO;
 import com.sb.main.dtoresponse.StudentSearchResponseDTO;
 import com.sb.main.service.ProductService;
+import com.sb.main.uniqueDTO.auditResponseDto;
 
 import java.util.Map;
 import java.util.Optional;
@@ -16,7 +16,7 @@ public class ProductController {
 
     @Autowired
     private ProductService productService;
-
+   
     @PostMapping
     public Product saveProduct(@RequestBody Product product) {
         return productService.saveProduct(product);
@@ -45,4 +45,26 @@ public class ProductController {
     public StudentSearchResponseDTO getStudentData() {
         return productService.searchStudent();  // Now returns the DTO
     }
+    @GetMapping("/marks/{minMarks}")
+    public StudentSearchResponseDTO getStudentsByMarks(@PathVariable int minMarks) {
+        return productService.getStudentsWithMarksGreaterThan1(minMarks);
+    }
+    @GetMapping("/auditlogs")
+    public AuditLogResponseDTO getAuditLogs() {
+        return productService.getAllAuditLogs();
+    }
+    @GetMapping("/types")
+    public auditResponseDto getUniqueAuditTypes() {
+        return  productService.getUniqueAuditTypes();
+    }
+    @GetMapping("/filter")
+    public AuditLogResponseDTO getFilteredAuditLogs(
+            @RequestParam(required = false) String firstName,
+            @RequestParam(required = false) String lastName,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String auditType,
+            @RequestParam(required = false) String dateRange) {
+
+        return  productService.getFilteredAuditLogs(firstName, lastName, email, auditType, dateRange);
+}
 }

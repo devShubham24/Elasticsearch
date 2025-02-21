@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Log Dashboard</title>
+    
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 14px; }
+        th { background-color: #f4f4f4; }
+        button { padding: 10px 15px; background-color: blue; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: darkblue; }
+        .table-container { overflow-x: auto; max-height: 400px; }
+    </style>
+</head>
+<body>
+
+    <h2>Audit Log Dashboard</h2>
+    <div>
+        <input type="text" id="firstName" placeholder="First Name">
+        <input type="text" id="lastName" placeholder="Last Name">
+        <input type="email" id="email" placeholder="Email">
+        <select id="auditType">
+            <option value="">Select Audit Type</option>
+        </select>
+        <input type="text" id="dateRange" placeholder="MM/DD/YYYY - MM/DD/YYYY">
+        <button onclick="fetchAuditLogs()">Submit</button>
+    </div>
+    
+    <div class="table-container">
+        <table id="auditTable">
+            <thead>
+                <tr>
+                    <th>Audit ID</th>
+                    <th>User ID</th>
+                    <th>Audit Type</th>
+                    <th>Affected User ID</th>
+                    <th>Role ID</th>
+                    <th>File ID</th>
+                    <th>Audit Type ID</th>
+                    <th>Audit Source</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Gender</th>
+                    <th>Date of Birth</th>
+                    <th>Role Name</th>
+                    <th>User Category</th>
+                    <th>Created At</th>
+                    <th>Email</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        async function fetchAuditLogs() {
+            try {
+                let firstName = document.getElementById('firstName').value.trim();
+                let lastName = document.getElementById('lastName').value.trim();
+                let email = document.getElementById('email').value.trim();
+                let auditType = document.getElementById('auditType').value.trim();
+                let dateRange = document.getElementById('dateRange').value.trim();
+
+                // Construct URL with only non-empty parameters
+                let queryParams = new URLSearchParams();
+                if (firstName) queryParams.append("firstName", firstName);
+                if (lastName) queryParams.append("lastName", lastName);
+                if (email) queryParams.append("email", email);
+                if (auditType) queryParams.append("auditType", auditType);
+                if (dateRange) queryParams.append("dateRange", dateRange);
+
+                let apiUrl = `http://localhost:8181/products/filter?${queryParams.toString()}`;
+
+                const response = await fetch(apiUrl);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json(); 
+                console.log("Fetched Data:", data);
+                populateTable(data.auditLogs);
+            } catch (error) {
+                console.error("Error fetching audit logs:", error);
+                alert(`Failed to fetch data: ${error.message}`);
+            }
+        }
+
+        function populateTable(logs) {
+            const tableBody = document.querySelector("#auditTable tbody");
+            tableBody.innerHTML = ""; // Clear previous data
+
+            if (!logs || logs.length === 0) {
+                tableBody.innerHTML = "<tr><td colspan='16' style='text-align:center;'>No records found</td></tr>";
+                return;
+            }
+
+            logs.forEach(log => {
+                const row = document.createElement("tr");
+
+                row.innerHTML = `
+                    <td>${log.auditLogId || "-"}</td>
+                    <td>${log.pdmpUserId || "-"}</td>
+                    <td>${log.auditType || "-"}</td>
+                    <td>${log.affectedUserId || "-"}</td>
+                    <td>${log.roleId || "-"}</td>
+                    <td>${log.fileId || "-"}</td>
+                    <td>${log.auditTypeId || "-"}</td>
+                    <td>${log.auditSource || "-"}</td>
+                    <td>${log.firstName || "-"}</td>
+                    <td>${log.lastName || "-"}</td>
+                    <td>${log.gender || "-"}</td>
+                    <td>${log.dateOfBirth ? new Date(log.dateOfBirth).toLocaleDateString() : "-"}</td>
+                    <td>${log.roleName || "-"}</td>
+                    <td>${log.userCategory || "-"}</td>
+                    <td>${log.createdAt ? new Date(log.createdAt).toLocaleString() : "-"}</td>
+                    <td>${log.userEmail || "-"}</td>
+                `;
+
+                tableBody.appendChild(row);
+            });
+        }
+
+        async function fetchAuditTypes() {
+            try {
+                const response = await fetch("http://localhost:8181/products/types");
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log("Fetched Audit Types:", data);
+
+                const dropdown = document.getElementById("auditType");
+                dropdown.innerHTML = '<option value="">Select Audit Type</option>'; // Reset dropdown
+
+                data.uniqueAuditTypes.forEach(type => {
+                    const option = document.createElement("option");
+                    option.value = type;
+                    option.textContent = type;
+                    dropdown.appendChild(option);
+                });
+            } catch (error) {
+                console.error("Error fetching audit types:", error);
+                alert(`Failed to load audit types: ${error.message}`);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            flatpickr("#dateRange", {
+                mode: "range",
+                dateFormat: "m/d/Y",
+                altInput: true,
+                altFormat: "m/d/Y",
+                allowInput: true,
+                locale: {
+                    rangeSeparator: " - "
+                },
+                onClose: function (selectedDates, dateStr, instance) {
+                    console.log("Selected Date Range:", dateStr);
+                }
+            });
+
+            fetchAuditTypes();
+        });
+    </script>
+
+</body>
+</html>
