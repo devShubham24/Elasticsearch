@@ -176,6 +176,8 @@ thead tr {
 <div id="charts-container">
     <div id="genderChart" style="width: 48%; height: 400px; display: inline-block;"></div>
     <div id="roleChart" style="width: 48%; height: 400px; display: inline-block;"></div>
+    <div id="auditLogsOverTimeChart" style="width: 100%; height: 400px; margin-top: 20px;"></div>
+    <div id="auditTypeChart" style="width: 48%; height: 400px; display: inline-block;"></div>
 </div>
 
 
@@ -337,71 +339,80 @@ document.addEventListener("DOMContentLoaded", function () {
             flatpickr("#dateRange", { mode: "range", dateFormat: "m/d/Y" });
         });
      //--------------------------------------highchart   
-         async function fetchAndRenderCharts() {
-        try {
-            let apiUrl = "http://localhost:8181/products/filter";
-            const response = await fetch(apiUrl);
+       async function fetchAndRenderCharts() {
+    try {
+        let apiUrl = "http://localhost:8181/products/filter";
+        const response = await fetch(apiUrl);
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            const auditLogs = data.auditLogs || [];
-
-            // Process Data
-            let genderCount = {};
-            let roleCount = {};
-
-            auditLogs.forEach(log => {
-                let gender = log.gender || "Unknown";
-                let role = log.roleName || "Unknown";
-
-                genderCount[gender] = (genderCount[gender] || 0) + 1;
-                roleCount[role] = (roleCount[role] || 0) + 1;
-            });
-
-            // Convert to Highcharts Format
-            let genderData = Object.keys(genderCount).map(key => ({
-                name: key,
-                y: genderCount[key]
-            }));
-
-            let roleCategories = Object.keys(roleCount);
-            let roleData = Object.values(roleCount);
-
-            // Render Pie Chart - Gender Distribution
-            Highcharts.chart('genderChart', {
-                chart: { type: 'pie' },
-                title: { text: 'Gender Distribution' },
-                series: [{
-                    name: 'Users',
-                    colorByPoint: true,
-                    data: genderData
-                }]
-            });
-
-            // Render Bar Chart - Role-Based User Count
-            Highcharts.chart('roleChart', {
-                chart: { type: 'column' },
-                title: { text: 'Role-Based User Count' },
-                xAxis: { categories: roleCategories, title: { text: 'Roles' } },
-                yAxis: { title: { text: 'User Count' } },
-                series: [{
-                    name: 'Users',
-                    data: roleData
-                }]
-            });
-
-        } catch (error) {
-            console.error("Error fetching data for charts:", error);
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
         }
-    }
 
-    // Fetch and render charts when page loads
-    document.addEventListener("DOMContentLoaded", () => {
-        fetchAndRenderCharts();
-    });
+        const data = await response.json();
+        const auditLogs = data.auditLogs || [];
+
+        let genderCount = {};
+        let roleCount = {};
+        let auditTypeCount = {};
+        let logsOverTime = {};
+
+        auditLogs.forEach(log => {
+            let gender = log.gender || "Unknown";
+            let role = log.roleName || "Unknown";
+            let auditType = log.auditType || "Unknown";
+            let createdAt = log.createdAt ? new Date(log.createdAt).toISOString().split('T')[0] : "Unknown";
+
+            genderCount[gender] = (genderCount[gender] || 0) + 1;
+            roleCount[role] = (roleCount[role] || 0) + 1;
+            auditTypeCount[auditType] = (auditTypeCount[auditType] || 0) + 1;
+            logsOverTime[createdAt] = (logsOverTime[createdAt] || 0) + 1;
+        });
+
+        let genderData = Object.keys(genderCount).map(key => ({ name: key, y: genderCount[key] }));
+        let roleCategories = Object.keys(roleCount);
+        let roleData = Object.values(roleCount);
+        let auditTypeCategories = Object.keys(auditTypeCount);
+        let auditTypeData = Object.values(auditTypeCount);
+        let logDates = Object.keys(logsOverTime).sort();
+        let logCounts = logDates.map(date => logsOverTime[date]);
+
+        Highcharts.chart('genderChart', {
+            chart: { type: 'pie' },
+            title: { text: 'Gender Distribution' },
+            series: [{ name: 'Users', colorByPoint: true, data: genderData }]
+        });
+
+        Highcharts.chart('roleChart', {
+            chart: { type: 'column' },
+            title: { text: 'Role-Based User Count' },
+            xAxis: { categories: roleCategories, title: { text: 'Roles' } },
+            yAxis: { title: { text: 'User Count' } },
+            series: [{ name: 'Users', data: roleData }]
+        });
+
+        Highcharts.chart('auditLogsOverTimeChart', {
+            chart: { type: 'line' },
+            title: { text: 'Audit Logs Over Time' },
+            xAxis: { categories: logDates, title: { text: 'Date' } },
+            yAxis: { title: { text: 'Audit Logs Count' } },
+            series: [{ name: 'Audit Logs', data: logCounts }]
+        });
+
+        Highcharts.chart('auditTypeChart', {
+            chart: { type: 'bar' },
+            title: { text: 'Audit Type Count' },
+            xAxis: { categories: auditTypeCategories, title: { text: 'Audit Type' } },
+            yAxis: { title: { text: 'Count' } },
+            series: [{ name: 'Audit Types', data: auditTypeData }]
+        });
+
+    } catch (error) {
+        console.error("Error fetching data for charts:", error);
+    }
+}
+
+// Fetch and render charts when page loads
+fetchAndRenderCharts();
 
     </script>
 
