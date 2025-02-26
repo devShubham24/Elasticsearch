@@ -63,8 +63,11 @@ public class ProductController {
             @RequestParam(required = false) String lastName,
             @RequestParam(required = false) String email,
             @RequestParam(required = false) String auditType,
-            @RequestParam(required = false) String dateRange) {
+            @RequestParam(required = false) String dateRange,
+            @RequestParam(defaultValue = "0") int pageNumber,  // Default to first page
+            @RequestParam(defaultValue = "50") int pageSize) { // Default page size to 10
 
-        return  productService.getFilteredAuditLogs(firstName, lastName, email, auditType, dateRange);
-}
+        return productService.getFilteredAuditLogs(firstName, lastName, email, auditType, dateRange, pageNumber, pageSize);
+    }
+
 }

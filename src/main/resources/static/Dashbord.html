@@ -4,37 +4,133 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audit Log Dashboard</title>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
     
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
     <!-- Flatpickr JS -->
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 14px; }
-        th { background-color: #f4f4f4; }
-        button { padding: 10px 15px; background-color: blue; color: white; border: none; cursor: pointer; }
-        button:hover { background-color: darkblue; }
-        .table-container { overflow-x: auto; max-height: 400px; }
+    <style type="text/css">
+   body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    font-size: 14px;
+}
+
+th {
+    background-color: #f4f4f4;
+}
+
+button {
+    padding: 10px 15px;
+    background-color: blue;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: darkblue;
+}
+
+.table-container {
+    overflow-y: auto;
+    max-height: 400px;
+    position: relative;
+    border: 1px solid #ddd;
+}
+
+thead tr {
+    position: sticky;
+    top: 0;
+    background-color: #f4f4f4;
+    z-index: 2;
+}
+
+/* Updated pagination styles */
+.pagination-container {
+    display: flex;
+    justify-content: center;  /* Centers content horizontally */
+    align-items: center;  /* Aligns vertically */
+    gap: 15px; /* Adds space between elements */
+    margin-top: 20px;
+    width: 100%;
+    flex-wrap: wrap; /* Allows wrapping for responsiveness */
+    padding: 10px;
+    background-color: #f9f9f9; /* Optional: Adds contrast */
+    border-radius: 5px; /* Optional: Smooth edges */
+}
+
+
+
+
+.page-btn {
+    padding: 10px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+}
+
+.page-btn:disabled {
+    background-color: gray;
+    cursor: not-allowed;
+}
+
+.page-size-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+
     </style>
 </head>
 <body>
 
-    <h2>Audit Log Dashboard</h2>
-    <div>
+    <h2><center>Audit Log Dashboard</center></h2>
+  <div class ="col-md-12">
+    <div class="filter-container col-md-6">
+        <label for="firstName"> First Name:</label>
         <input type="text" id="firstName" placeholder="First Name">
+
+        <label for="lastName"> Last Name:</label>
         <input type="text" id="lastName" placeholder="Last Name">
+
+        <label for="email">Email:</label>
         <input type="email" id="email" placeholder="Email">
+ </div>
+ <div class=" col-md-6">
+        <label for="auditType">Audit Type:</label>
         <select id="auditType">
-            <option value="">Select Audit Type</option>
+            <option value="">Loading...</option>
         </select>
+
+        <label for="dateRange">Date Range:</label>
         <input type="text" id="dateRange" placeholder="MM/DD/YYYY - MM/DD/YYYY">
-        <button onclick="fetchAuditLogs()">Submit</button>
+
+        <button onclick="fetchAuditLogs(1)">Submit</button>
+        <button onclick="resetFilters()">Reset</button>
     </div>
+    </div>
+    <label>
+    <input type="checkbox" id="toggleChart"> Show Charts
+</label>
     
+
     <div class="table-container">
         <table id="auditTable">
             <thead>
@@ -57,14 +153,70 @@
                     <th>Email</th>
                 </tr>
             </thead>
-            <tbody>
-                <!-- Data will be inserted here -->
-            </tbody>
+            <tbody></tbody>
         </table>
     </div>
 
+  <div class="pagination-container">
+    <button class="page-btn" id="prevPage" onclick="goToPrevPage()" disabled>Previous</button>
+    <span id="pageNumber">Page 1</span> of <span id="totalPages">1</span>
+    <button class="page-btn" id="nextPage" onclick="goToNextPage()">Next</button>
+
+    <div class="page-size-container">
+        <label for="pageSize">Items per page:</label>
+        <select id="pageSize">
+            <option value="5">5</option>
+            <option value="10" selected>10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+        </select>
+    </div>
+</div>
+<div id="charts-container">
+    <div id="genderChart" style="width: 48%; height: 400px; display: inline-block;"></div>
+    <div id="roleChart" style="width: 48%; height: 400px; display: inline-block;"></div>
+</div>
+
+
+
     <script>
-        async function fetchAuditLogs() {
+    function resetFilters() {
+    document.getElementById("firstName").value = "";
+    document.getElementById("lastName").value = "";
+    document.getElementById("email").value = "";
+    document.getElementById("auditType").value = "";
+    document.getElementById("dateRange").value = "";
+    fetchAuditLogs(1); // Reload data with cleared filters
+}
+document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("toggleChart").addEventListener("change", function () {
+        const chartsContainer = document.getElementById("charts-container");
+        const tableContainer = document.querySelector(".table-container");
+
+        if (this.checked) {
+            chartsContainer.style.display = "block";
+            tableContainer.style.display = "none";
+        } else {
+            chartsContainer.style.display = "none";
+            tableContainer.style.display = "block";
+        }
+    });
+
+    // Hide charts by default
+    document.getElementById("charts-container").style.display = "none";
+});
+
+        let currentPage = 1;
+        let totalPages = 1;
+        let pageSize = parseInt(document.getElementById("pageSize").value, 10);
+        
+        document.getElementById("pageSize").addEventListener("change", function() {
+            pageSize = parseInt(this.value, 10);
+            fetchAuditLogs(1);
+        });
+
+        async function fetchAuditLogs(pageNumber) {
             try {
                 let firstName = document.getElementById('firstName').value.trim();
                 let lastName = document.getElementById('lastName').value.trim();
@@ -72,34 +224,46 @@
                 let auditType = document.getElementById('auditType').value.trim();
                 let dateRange = document.getElementById('dateRange').value.trim();
 
-                // Construct URL with only non-empty parameters
                 let queryParams = new URLSearchParams();
                 if (firstName) queryParams.append("firstName", firstName);
                 if (lastName) queryParams.append("lastName", lastName);
                 if (email) queryParams.append("email", email);
                 if (auditType) queryParams.append("auditType", auditType);
                 if (dateRange) queryParams.append("dateRange", dateRange);
+                queryParams.append("pageNumber", pageNumber);
+                queryParams.append("pageSize", pageSize);
 
                 let apiUrl = `http://localhost:8181/products/filter?${queryParams.toString()}`;
-
                 const response = await fetch(apiUrl);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
 
-                const data = await response.json(); 
-                console.log("Fetched Data:", data);
+                const data = await response.json();
+                
+                
+           
+
+              // document.getElementById("tablePaginationAudit").style.display = data.length === 0 ? "none" : "flex";
+
+
+                totalPages = data.totalPages;
+                currentPage = pageNumber;
+
                 populateTable(data.auditLogs);
+                updatePaginationButtons();
             } catch (error) {
                 console.error("Error fetching audit logs:", error);
                 alert(`Failed to fetch data: ${error.message}`);
             }
         }
+        
+       
 
         function populateTable(logs) {
             const tableBody = document.querySelector("#auditTable tbody");
-            tableBody.innerHTML = ""; // Clear previous data
+            tableBody.innerHTML = "";
 
             if (!logs || logs.length === 0) {
                 tableBody.innerHTML = "<tr><td colspan='16' style='text-align:center;'>No records found</td></tr>";
@@ -132,49 +296,113 @@
             });
         }
 
+        function updatePaginationButtons() {
+            document.getElementById("pageNumber").innerText = `Page ${currentPage}`;
+            document.getElementById("totalPages").innerText = totalPages;
+            document.getElementById("prevPage").disabled = currentPage === 1;
+            document.getElementById("nextPage").disabled = currentPage >= totalPages;
+        }
+        function goToNextPage() {
+    if (currentPage < totalPages) {
+        currentPage++;  // Increment the page count
+        fetchAuditLogs(currentPage);
+    }
+}
+
+
+   function goToPrevPage() {
+    if (currentPage > 1) {
+        currentPage--;  // Decrement the page count
+        fetchAuditLogs(currentPage);
+    }
+}
+
         async function fetchAuditTypes() {
             try {
                 const response = await fetch("http://localhost:8181/products/types");
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
                 const data = await response.json();
-                console.log("Fetched Audit Types:", data);
-
                 const dropdown = document.getElementById("auditType");
-                dropdown.innerHTML = '<option value="">Select Audit Type</option>'; // Reset dropdown
-
-                data.uniqueAuditTypes.forEach(type => {
-                    const option = document.createElement("option");
-                    option.value = type;
-                    option.textContent = type;
-                    dropdown.appendChild(option);
-                });
+                dropdown.innerHTML = '<option value="">Select Audit Type</option>';
+                data.uniqueAuditTypes.forEach(type => dropdown.innerHTML += `<option value="${type}">${type}</option>`);
             } catch (error) {
                 console.error("Error fetching audit types:", error);
-                alert(`Failed to load audit types: ${error.message}`);
             }
-        }
+        }     
 
-        document.addEventListener("DOMContentLoaded", function () {
-            flatpickr("#dateRange", {
-                mode: "range",
-                dateFormat: "m/d/Y",
-                altInput: true,
-                altFormat: "m/d/Y",
-                allowInput: true,
-                locale: {
-                    rangeSeparator: " - "
-                },
-                onClose: function (selectedDates, dateStr, instance) {
-                    console.log("Selected Date Range:", dateStr);
-                }
+        document.addEventListener("DOMContentLoaded", () => {
+            fetchAuditLogs(1);
+            fetchAuditTypes();
+            flatpickr("#dateRange", { mode: "range", dateFormat: "m/d/Y" });
+        });
+     //--------------------------------------highchart   
+         async function fetchAndRenderCharts() {
+        try {
+            let apiUrl = "http://localhost:8181/products/filter";
+            const response = await fetch(apiUrl);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const auditLogs = data.auditLogs || [];
+
+            // Process Data
+            let genderCount = {};
+            let roleCount = {};
+
+            auditLogs.forEach(log => {
+                let gender = log.gender || "Unknown";
+                let role = log.roleName || "Unknown";
+
+                genderCount[gender] = (genderCount[gender] || 0) + 1;
+                roleCount[role] = (roleCount[role] || 0) + 1;
             });
 
-            fetchAuditTypes();
-        });
+            // Convert to Highcharts Format
+            let genderData = Object.keys(genderCount).map(key => ({
+                name: key,
+                y: genderCount[key]
+            }));
+
+            let roleCategories = Object.keys(roleCount);
+            let roleData = Object.values(roleCount);
+
+            // Render Pie Chart - Gender Distribution
+            Highcharts.chart('genderChart', {
+                chart: { type: 'pie' },
+                title: { text: 'Gender Distribution' },
+                series: [{
+                    name: 'Users',
+                    colorByPoint: true,
+                    data: genderData
+                }]
+            });
+
+            // Render Bar Chart - Role-Based User Count
+            Highcharts.chart('roleChart', {
+                chart: { type: 'column' },
+                title: { text: 'Role-Based User Count' },
+                xAxis: { categories: roleCategories, title: { text: 'Roles' } },
+                yAxis: { title: { text: 'User Count' } },
+                series: [{
+                    name: 'Users',
+                    data: roleData
+                }]
+            });
+
+        } catch (error) {
+            console.error("Error fetching data for charts:", error);
+        }
+    }
+
+    // Fetch and render charts when page loads
+    document.addEventListener("DOMContentLoaded", () => {
+        fetchAndRenderCharts();
+    });
+
     </script>
 
 </body>

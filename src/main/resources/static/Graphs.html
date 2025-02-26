@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Logs Dashboard</title>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+</head>
+<body>
+
+    <div id="genderChart" style="width: 600px; height: 400px;"></div>
+    <div id="auditTypeChart" style="width: 600px; height: 400px;"></div>
+    <div id="userCategoryChart" style="width: 600px; height: 400px;"></div>
+    <div id="logsOverTimeChart" style="width: 600px; height: 400px;"></div>
+
+    <script>
+        // Sample JSON data
+        const auditLogs = [
+            {"auditType": "USER_LOGGED_IN", "gender": "Male", "userCategory": "Administrators", "createdAt": "2020-09-08T14:12:51+0000"},
+            {"auditType": "PATIENT_REPORT_RETRIEVED", "gender": "Male", "userCategory": "Unknown", "createdAt": "2020-09-08T12:30:53+0000"},
+            {"auditType": "USER_DELETED", "gender": "Male", "userCategory": "Supervisors", "createdAt": "2020-09-10T18:20:45+0000"},
+            {"auditType": "USER_LOGGED_IN", "gender": "Male", "userCategory": "Administrators", "createdAt": "2024-03-15T10:20:30+0000"},
+            {"auditType": "PATIENT_REPORT_RETRIEVED", "gender": "Female", "userCategory": "Medical Staff", "createdAt": "2025-05-10T08:45:15+0000"},
+            {"auditType": "USER_UPDATED", "gender": "Male", "userCategory": "Managers", "createdAt": "2024-08-22T12:30:45+0000"},
+            {"auditType": "PATIENT_SEARCH_QUERY_EXECUTED", "gender": "Male", "userCategory": "Technical Staff", "createdAt": "2024-07-10T14:12:30+0000"},
+            {"auditType": "USER_LOGGED_OUT", "gender": "Female", "userCategory": "Medical Staff", "createdAt": "2025-06-25T20:30:50+0000"},
+            {"auditType": "PATIENT_RECORD_UPDATED", "gender": "Male", "userCategory": "Administrators", "createdAt": "2024-10-15T09:40:20+0000"},
+            {"auditType": "USER_ACCESS_REVOKED", "gender": "Female", "userCategory": "Security Staff", "createdAt": "2025-01-05T11:50:35+0000"}
+        ];
+
+        // Function to count occurrences of a field
+        function countOccurrences(field) {
+            return auditLogs.reduce((acc, log) => {
+                acc[log[field]] = (acc[log[field]] || 0) + 1;
+                return acc;
+            }, {});
+        }
+
+        // Gender Distribution (Pie Chart)
+        const genderCounts = countOccurrences("gender");
+        Highcharts.chart("genderChart", {
+            chart: { type: "pie" },
+            title: { text: "Gender Distribution" },
+            series: [{
+                name: "Count",
+                colorByPoint: true,
+                data: Object.entries(genderCounts).map(([key, value]) => ({ name: key, y: value }))
+            }]
+        });
+
+        // Audit Types Count (Column Chart)
+        const auditTypeCounts = countOccurrences("auditType");
+        Highcharts.chart("auditTypeChart", {
+            chart: { type: "column" },
+            title: { text: "Audit Type Count" },
+            xAxis: { categories: Object.keys(auditTypeCounts), title: { text: "Audit Types" } },
+            yAxis: { title: { text: "Count" } },
+            series: [{ name: "Count", data: Object.values(auditTypeCounts) }]
+        });
+
+        // User Categories Count (Bar Chart)
+        const userCategoryCounts = countOccurrences("userCategory");
+        Highcharts.chart("userCategoryChart", {
+            chart: { type: "bar" },
+            title: { text: "User Category Count" },
+            xAxis: { categories: Object.keys(userCategoryCounts), title: { text: "User Categories" } },
+            yAxis: { title: { text: "Count" } },
+            series: [{ name: "Count", data: Object.values(userCategoryCounts) }]
+        });
+
+        // Logs Over Time (Line Chart)
+        const logsOverTime = countOccurrences("createdAt");
+        const sortedDates = Object.keys(logsOverTime).sort();
+        Highcharts.chart("logsOverTimeChart", {
+            chart: { type: "line" },
+            title: { text: "Audit Logs Over Time" },
+            xAxis: { categories: sortedDates, title: { text: "Date" } },
+            yAxis: { title: { text: "Count" } },
+            series: [{ name: "Logs", data: sortedDates.map(date => logsOverTime[date]) }]
+        });
+
+    </script>
+
+</body>
+</html>
+>

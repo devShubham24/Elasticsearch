@@ -60,7 +60,8 @@ public class ProductService {
     public auditResponseDto getUniqueAuditTypes() {
         return productDAO.getUniqueAuditTypes();
     }
-    public AuditLogResponseDTO getFilteredAuditLogs(String firstName, String lastName, String email, String auditType, String dateRange) {
-        return productDAO.fetchFilteredAuditLogs(firstName, lastName, email, auditType, dateRange);
+    public AuditLogResponseDTO getFilteredAuditLogs(String firstName, String lastName, String email, String auditType, String dateRange, int pageNumber, int pageSize) {
+        return productDAO.fetchFilteredAuditLogs(firstName, lastName, email, auditType, dateRange, pageNumber, pageSize);
     }
+
 }

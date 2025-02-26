@@ -32,7 +32,7 @@ public class ProductDAO {
     private static final Logger logger = LoggerFactory.getLogger(ProductDAO.class);
 
     @Autowired
-    private RestClient restClient;
+    private RestClient restClient;      
 
     public Map<String, Object> getAggregatedPriceData() {
         Map<String, Object> result = new HashMap<>();
@@ -376,7 +376,7 @@ public class ProductDAO {
         return new auditResponseDto(auditTypes);
     }
   //------------------------------------------------------------------------------------Dashboard fielter----------------------------------------------------------------------------------
-    public AuditLogResponseDTO fetchFilteredAuditLogs(String firstName, String lastName, String email, String auditType, String dateRange) {
+    public AuditLogResponseDTO fetchFilteredAuditLogs(String firstName, String lastName, String email, String auditType, String dateRange, int pageNumber, int pageSize) {
         AuditLogResponseDTO responseDTO = new AuditLogResponseDTO();
         List<AuditLogDTO> auditLogs = new ArrayList<>();
 
@@ -386,6 +386,11 @@ public class ProductDAO {
             JSONObject boolQuery = new JSONObject();
             JSONArray mustConditions = new JSONArray();
 
+            // Calculate pagination
+            int from = Math.max(0, (pageNumber - 1) * pageSize);
+            jsonQuery.put("from", from);
+            jsonQuery.put("size", pageSize);
+
             // If no filters are provided, use match_all
             if ((firstName == null || firstName.isEmpty()) &&
                 (lastName == null || lastName.isEmpty()) &&
@@ -394,7 +399,8 @@ public class ProductDAO {
                 (dateRange == null || dateRange.isEmpty())) {
 
                 JSONObject matchAllQuery = new JSONObject();
-                jsonQuery.put("query", matchAllQuery.put("match_all", new JSONObject()));
+                matchAllQuery.put("match_all", new JSONObject());
+                jsonQuery.put("query", matchAllQuery);
 
             } else {
                 // Add firstName condition
@@ -443,14 +449,13 @@ public class ProductDAO {
 
                 // Add date range condition
                 if (dateRange != null && !dateRange.isEmpty()) {
-                    String[] dates = dateRange.split(" - ");
+                    String[] dates = dateRange.split(" to ");
                     if (dates.length == 2) {
                         SimpleDateFormat inputFormat = new SimpleDateFormat("MM/dd/yyyy");
                         SimpleDateFormat esFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
                         esFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-
-                        String startDate = esFormat.format(inputFormat.parse(dates[0])) + "+0000";
-                        String endDate = esFormat.format(inputFormat.parse(dates[1])) + "+0000";
+                        String startDate = esFormat.format(inputFormat.parse(dates[0]));
+                        String endDate = esFormat.format(inputFormat.parse(dates[1]));
 
                         JSONObject dateRangeQuery = new JSONObject();
                         dateRangeQuery.put("gte", startDate);
@@ -485,9 +490,16 @@ public class ProductDAO {
             JSONObject jsonResponse = new JSONObject(jsonString);
             logger.info("Elasticsearch Response: {}", jsonString);
 
+            // Get total hits
             JSONObject hitsObject = jsonResponse.getJSONObject("hits");
             int totalHits = hitsObject.getJSONObject("total").getInt("value");
             responseDTO.setTotalHits(totalHits);
+            logger.info("shubham Total Hits: " + totalHits);
+
+            // Calculate total pages
+            int totalPages = (int) Math.ceil((double) totalHits / pageSize);
+            responseDTO.setTotalPages(totalPages);  // Added this line
+            logger.info("Total Pages Calculated: " + totalPages);
 
             JSONArray hitsArray = hitsObject.getJSONArray("hits");
             for (int i = 0; i < hitsArray.length(); i++) {
@@ -524,7 +536,4 @@ public class ProductDAO {
 
         return responseDTO;
     }
-
-     }
-
-
+}
