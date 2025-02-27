@@ -124,11 +124,12 @@ thead tr {
 
         <button onclick="fetchAuditLogs(1)">Submit</button>
         <button onclick="resetFilters()">Reset</button>
-    </div>
-    </div>
-    <label>
+         <label>
     <input type="checkbox" id="toggleChart"> Show Charts
 </label>
+    </div>
+    </div>
+   
     
 
     <div class="table-container">
@@ -157,7 +158,7 @@ thead tr {
         </table>
     </div>
 
-  <div class="pagination-container">
+  <div class="pagination-container" id="pagination" >
     <button class="page-btn" id="prevPage" onclick="goToPrevPage()" disabled>Previous</button>
     <span id="pageNumber">Page 1</span> of <span id="totalPages">1</span>
     <button class="page-btn" id="nextPage" onclick="goToNextPage()">Next</button>
@@ -199,6 +200,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (this.checked) {
             chartsContainer.style.display = "block";
             tableContainer.style.display = "none";
+             pagination.style.display = "none";
         } else {
             chartsContainer.style.display = "none";
             tableContainer.style.display = "block";
@@ -338,7 +340,8 @@ document.addEventListener("DOMContentLoaded", function () {
             fetchAuditTypes();
             flatpickr("#dateRange", { mode: "range", dateFormat: "m/d/Y" });
         });
-     //--------------------------------------highchart   
+     //--------------------------------------highchart  --------------------------------------------------------------------------------
+      
        async function fetchAndRenderCharts() {
     try {
         let apiUrl = "http://localhost:8181/products/filter";
@@ -398,7 +401,7 @@ document.addEventListener("DOMContentLoaded", function () {
             series: [{ name: 'Audit Logs', data: logCounts }]
         });
 
-        Highcharts.chart('auditTypeChart', {
+        Highcharts.chart('auditTypeChart', {   
             chart: { type: 'bar' },
             title: { text: 'Audit Type Count' },
             xAxis: { categories: auditTypeCategories, title: { text: 'Audit Type' } },
